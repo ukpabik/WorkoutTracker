@@ -17,13 +17,13 @@ const pool = new Pool({
 
 // Promise for connecting to database
 pool.connect()
-.then(() => console.log('Connected to PostgreSQL'))
-.catch(err => console.error('Error connecting to PostgreSQL:', err));
+  .then(() => console.log('Connected to PostgreSQL'))
+  .catch(err => console.error('Error connecting to PostgreSQL:', err));
 
 
 // Create table for workouts
 (async () => {
-  try{
+  try {
     await pool.query(`
         CREATE TABLE IF NOT EXISTS workouts (
           workout_name TEXT PRIMARY KEY,
@@ -36,9 +36,9 @@ pool.connect()
       
       
       `);
-      console.log('Tables created successfully.');
+    console.log('Tables created successfully.');
   }
-  catch(err){
+  catch (err) {
     console.error('Error creating tables:', err);
   }
 })();
@@ -70,14 +70,17 @@ app.use(express.json());
  * - min_distance: (decimal) Minimum distance (in miles).
  * - max_distance: (decimal) Maximum distance (in miles).
  * - heart_rate: (int) Exact heart rate.
- * - date_time: (string) Exact date and time (ISO 8601 format).
+ * - date_time: (string) Exact date and time.
  * 
  * Response:
  * - 200: Array of workout objects.
  * - 400: 'Unable to retrieve workouts'
+ * 
+ * Example query: http://localhost:PORT/get-workouts?start_date=yesterday&end_date=yesterday
+ *  Gets all workouts from yesterday
  */
 app.get('/get-workouts', async (req, res) => {
-  try{
+  try {
     const filters = {
       workout_name: req.query.workout_name,
       min_duration: req.query.min_duration,
@@ -87,26 +90,26 @@ app.get('/get-workouts', async (req, res) => {
       heart_rate: req.query.heart_rate
     };
 
-
     // Get the correct parsed start and ending time
     const { start_time, end_time } = parseDateRange(req.query.start_date, req.query.end_date);
-    
+    // console.log('Parsed Start Time:', start_time); TESTING
+    // console.log('Parsed End Time:', end_time); TESTING
     if (start_time) filters.start_time = start_time;
     if (end_time) filters.end_time = end_time;
-    
-    
+
+
     const workouts = await getWorkouts(filters);
-    
-    if (!workouts){
+
+    if (!workouts) {
       res.status(400).send('No workouts found');
     }
     res.status(200).json(workouts);
   }
-  catch(err){
+  catch (err) {
     res.status(400).send('Unable to retrieve workouts', err);
   }
 
-  
+
 });
 
 
@@ -130,47 +133,47 @@ app.get('/get-workouts', async (req, res) => {
  * - 400: 'Missing required workout data' or 'Error adding workout'
  */
 app.post('/add-workout', (req, res) => {
-  try{
-     // Extracting workout data from request
-  const { workout_name, duration, distance, heart_rate } = req.body;
-  const date_time = new Date().toLocaleString();
+  try {
+    // Extracting workout data from request
+    const { workout_name, duration, distance, heart_rate } = req.body;
+    const date_time = new Date().toLocaleString();
 
 
 
 
-  // Making sure request has all fields
-  if (!duration || !distance || !workout_name || !heart_rate || !date_time) {
-    return res.status(400).send('Missing required workout data');
+    // Making sure request has all fields
+    if (!duration || !distance || !workout_name || !heart_rate) {
+      return res.status(400).send('Missing required workout data');
+    }
+
+
+    // Putting all data into one object
+    const workout = {
+      workout_name,
+      duration,
+      distance,
+      heart_rate,
+      date_time
+    }
+
+    // Add workout to database
+    addNewWorkout(workout);
+
+    res.status(200).send(`Workout added successfully: ${JSON.stringify(workout)}`)
+
   }
-
-
-  // Putting all data into one object
-  const workout = {
-    workout_name,
-    duration,
-    distance,
-    heart_rate,
-    date_time
-  }
-
-  // Add workout to database
-  addNewWorkout(workout);
-
-  res.status(200).send(`Workout added successfully: ${JSON.stringify(workout)}`)
-
-  }
-  catch(err){
+  catch (err) {
     res.status(400).send('Error adding workout: ', err);
   }
-  
+
 });
 
 /**
  * Function for adding new workout to database
  * @param {*} data The workout data
  */
-async function addNewWorkout(data){
-  try{
+async function addNewWorkout(data) {
+  try {
     const query = {
       text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time) VALUES($1, $2, $3, $4, $5)',
       values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time]
@@ -178,7 +181,7 @@ async function addNewWorkout(data){
 
     await pool.query(query);
   }
-  catch(err){
+  catch (err) {
     console.error('Error entering workout to DB:', err);
   }
 }
@@ -190,51 +193,64 @@ async function addNewWorkout(data){
  * Function for getting all workouts
  * @returns All workouts
  */
-async function getWorkouts(filters = {}){
-  try{
+async function getWorkouts(filters = {}) {
+  try {
     const params = [];
-    
+
     // Start query with true condition
-    let query = 'SELECT * FROM workouts WHERE 0=0';
-    
+    let query = 'SELECT * FROM workouts WHERE 1=1';
+
 
     // Add filters dynamically by appending to query
-    if (filters.workout_name){
+    if (filters.workout_name) {
       params.push(`%${filters.workout_name}%`);
       query += ` AND workout_name ILIKE $${params.length}`;
     }
 
-    if (filters.min_duration){
+    if (filters.min_duration) {
       params.push(filters.min_duration);
       query += ` AND duration >= $${params.length}`;
     }
-    if (filters.max_duration){
+
+    if (filters.max_duration) {
       params.push(filters.max_duration);
       query += ` AND duration <= $${params.length}`;
     }
-    if (filters.min_distance){
+
+    if (filters.min_distance) {
       params.push(filters.min_distance);
       query += ` AND distance >= $${params.length}`;
     }
-    if (filters.max_distance){
+
+    if (filters.max_distance) {
       params.push(filters.max_distance);
       query += ` AND distance <= $${params.length}`;
     }
-    if (filters.heart_rate){
+
+    if (filters.heart_rate) {
       params.push(filters.heart_rate);
       query += ` AND heart_rate = $${params.length}`;
     }
-    if (filters.start_time){
-      params.push(filters.min_distance);
-      query += ` AND distance >= $${params.length}`;
+
+    if (filters.start_time) {
+      params.push(filters.start_time);
+      query += ` AND date_time >= $${params.length}`;
     }
+
+    if (filters.end_time) {
+      params.push(filters.end_time);
+      query += ` AND date_time < $${params.length}`;
+    }
+
+    // console.log('Start Time:', filters.start_time); TESTING
+    // console.log('End Time:', filters.end_time); TESTING
 
     const response = await pool.query(query, params);
 
     return response.rows;
   }
 
-  catch(err){
+  catch (err) {
     console.error('Error retrieving workout: ', err);
   }
 }
@@ -249,40 +265,32 @@ async function getWorkouts(filters = {}){
  * @returns The parsed date range.
  */
 function parseDateRange(startDate, endDate) {
+  // console.log(startDate + ' : ' + endDate); TESTING
   let start_time, end_time;
+  const now = moment();
 
-  // Handle start date
-  const now = moment(); 
+  // Parse start date
   if (startDate === 'today') {
     start_time = now.startOf('day').toISOString();
-  } 
-  else if (startDate === 'yesterday') {
+  } else if (startDate === 'yesterday') {
     start_time = now.subtract(1, 'days').startOf('day').toISOString();
-  } 
-  else if (startDate === 'last_week') {
-    start_time = now.subtract(7, 'days').startOf('day').toISOString();
-  } 
-  else if (startDate) {
-    // Use MM-DD-YYYY format
-    start_time = moment(startDate, 'MM-DD-YYYY').startOf('day').toISOString();
+  } else if (startDate) {
+    start_time = moment(startDate, 'YYYY-MM-DD').startOf('day').toISOString();
   }
 
-  // Handle end date, default to current time if not provided
+  // Parse end date, ensure it ends at 23:59:59 of the same day
   if (endDate === 'today') {
+    // console.log(`Time: ${now.endOf('day').toISOString()}`); TESTING
     end_time = now.endOf('day').toISOString();
-  } 
-  else if (endDate === 'yesterday') {
+  } else if (endDate === 'yesterday') {
+    // console.log(`Time: ${now.endOf('day').toISOString()}`); TESTING
     end_time = moment().subtract(1, 'days').endOf('day').toISOString();
-  } 
-  else if (endDate === 'last_week') {
-    end_time = now.endOf('day').toISOString();
-  } 
-  else if (endDate) {
-    end_time = moment(endDate, 'MM-DD-YYYY').endOf('day').toISOString();
-  } 
-  else {
-    // Default to now if end date is null
-    end_time = now.toISOString();
+  } else if (endDate) {
+    // Start of day given
+    end_time = moment(endDate, 'YYYY-MM-DD').add(1, 'days').startOf('day').toISOString();
+  } else {
+    // Defaults to the end of current day
+    end_time = moment(startDate, 'YYYY-MM-DD').add(1, 'days').startOf('day').toISOString();
   }
 
   return { start_time, end_time };
