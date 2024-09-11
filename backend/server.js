@@ -1,6 +1,7 @@
 import axios from 'axios'
 import express from 'express'
 import pkg from 'pg'
+import cors from 'cors'
 import moment from 'moment'
 import 'dotenv/config'
 import { parse } from 'dotenv'
@@ -49,6 +50,8 @@ const port = process.env.PORT;
 
 // Initialize Express server
 const app = express();
+
+app.use(cors());
 
 // Parse JSON
 app.use(express.json());
