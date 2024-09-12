@@ -5,7 +5,9 @@ import Navbar from './Navbar';
 
 function HomepageComp() {
 
+  
   const [workouts, setWorkouts] = useState([]);
+  const [reverse, setReverse] = useState(false);
   const [workoutForm, setWorkoutForm] = useState({
     workout_name: '',
     duration: '',
@@ -28,6 +30,7 @@ function HomepageComp() {
   const toggleFilterBar = () => {
     setIsFilterOpen(!isFilterOpen);
   };
+  
 
   // Function that fetches the workouts based on provided filters
   const fetchWorkouts = async () => {
@@ -36,7 +39,9 @@ function HomepageComp() {
       // Uses url search params api to turn filters into a search query
       const query = new URLSearchParams(filters).toString();
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-workouts?${query}`);
+      
       setWorkouts(response.data);
+
     } catch (err) {
       console.error("Error fetching workouts:", err);
     }
@@ -62,6 +67,11 @@ function HomepageComp() {
     });
   };
 
+  // Handling checkbox
+  const handleCheckbox = () => {
+    setReverse(!reverse);
+  };
+
 
 
 
@@ -76,36 +86,46 @@ function HomepageComp() {
       day: 'numeric',
       year: 'numeric'
     };
-    return date.toLocaleString('en-US', options);
+    const formattedDate = date.toLocaleString('en-US', options).split(',');
+    return formattedDate[1] + " | " + formattedDate[0];
   }
 
 
-  // Fetch workouts after page is rendered
   useEffect(() => {
     fetchWorkouts();
   }, [filters]);
+
+  
 
 
   // Function to add a workout (used with add workout form)
   const handleSubmit = async (event) => {
     event.preventDefault();
-
+  
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, workoutForm);
-      console.log('Workout added:', response.data);
-
+      // Send the new workout to the backend
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, {
+        workout_name: workoutForm.workout_name,
+        duration: workoutForm.duration * 60, 
+        distance: workoutForm.distance,
+        heart_rate: workoutForm.heart_rate
+      });
+      
+  
       // Reset form
       setWorkoutForm({
         workout_name: '',
         duration: '',
         distance: '',
         heart_rate: ''
-      })
+      });
+
+      fetchWorkouts();
+  
+    } catch (err) {
+      console.error("Error adding workout:", err);
     }
-    catch (err) {
-      console.log("Can't add workout")
-    }
-  }
+  };
 
   return (
     <>
@@ -180,6 +200,15 @@ function HomepageComp() {
                     value={filters.end_date}
                     onChange={handleFilterChange}
                   />
+                  <div className='sort-box'>
+                    <label className='sort-label' htmlFor="Sort By Date">{reverse ? "Date ↓" : "Date ↑"}</label>
+                    <input 
+                      type="checkbox"
+                      name='Sort By Date'
+                      onChange={handleCheckbox}
+                      className='checkbox-input'
+                    />
+                  </div>
                 </div>
               )}
           </div>
@@ -203,7 +232,7 @@ function HomepageComp() {
                 <input
                   name='duration'
                   id="duration"
-                  placeholder='Duration (in seconds)'
+                  placeholder='Duration (in minutes)'
                   type="text"
                   value={workoutForm.duration}
                   onChange={handleInputChange}
@@ -214,7 +243,7 @@ function HomepageComp() {
                 <input
                   name='distance'
                   id="distance"
-                  placeholder='Distance'
+                  placeholder='Distance (in miles)'
                   type="text"
                   value={workoutForm.distance}
                   onChange={handleInputChange}
@@ -242,14 +271,16 @@ function HomepageComp() {
           <div className='workouts-container'>
             <p className='workouts-container-title'>Workouts</p>
             {workouts.length > 0 ? (
-              workouts.map((workout, index) => (
+              (reverse ? workouts.slice().reverse() : workouts).map((workout, index) => (
                 <div key={index} className='workout-item'>
                   <div className='workout-details'>
                     <span>{workout.workout_name}</span>
-                    <span title='Duration'><img className='icons' src="time-icon.svg" alt="duration icon" /> {workout.duration}s</span>
+                    <span title='Duration'><img className='icons' src="time-icon.svg" alt="duration icon" /> {Math.round(workout.duration / 60)} min</span>
                     <span title='Distance'><img className='icons' src="distance-icon.svg" alt="distance icon" /> {workout.distance} miles</span>
                     <span title='Heart Rate'><img className='icons' src="heart-icon.svg" alt="heart icon" /> {workout.heart_rate} bpm</span>
-                    <span title='Time'>Time: {formatDate(workout.date_time)}</span>
+                    <span title='Time' style={{
+                      fontSize: '0.8rem'
+                    }}>Time: {formatDate(workout.date_time)}</span>
                   </div>
                 </div>
               ))

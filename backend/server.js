@@ -282,7 +282,7 @@ function parseDateRange(startDate, endDate) {
     start_time = moment(startDate, 'YYYY-MM-DD').startOf('day').toISOString();
   }
 
-  // Parse end date, ensure it ends at 23:59:59 of the same day
+  // Parse end date
   if (endDate === 'today') {
     // console.log(`Time: ${now.endOf('day').toISOString()}`); TESTING
     end_time = now.endOf('day').toISOString();
