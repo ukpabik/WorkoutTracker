@@ -103,25 +103,33 @@ function HomepageComp() {
     event.preventDefault();
   
     try {
-      // Send the new workout to the backend
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, {
-        workout_name: workoutForm.workout_name,
-        duration: workoutForm.duration * 60, 
-        distance: workoutForm.distance,
-        heart_rate: workoutForm.heart_rate
-      });
       
-  
-      // Reset form
-      setWorkoutForm({
-        workout_name: '',
-        duration: '',
-        distance: '',
-        heart_rate: ''
-      });
+      const workoutNameExists = workouts.some(workout => workout.workout_name === workoutForm.workout_name);
 
+      if (!workoutNameExists) {
+        
+        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, {
+          workout_name: workoutForm.workout_name,
+          duration: workoutForm.duration * 60, 
+          distance: workoutForm.distance,
+          heart_rate: workoutForm.heart_rate
+        });
+
+        // Reset form
+        setWorkoutForm({
+          workout_name: '',
+          duration: '',
+          distance: '',
+          heart_rate: ''
+        });
+
+
+        
+      } 
+      else {
+        alert("Workout name already exists. Please choose a different name.");
+      }
       fetchWorkouts();
-  
     } catch (err) {
       console.error("Error adding workout:", err);
     }
@@ -281,6 +289,7 @@ function HomepageComp() {
                     <span title='Time' style={{
                       fontSize: '0.8rem'
                     }}>Time: {formatDate(workout.date_time)}</span>
+                    <img className='icons' src={workout.weather} alt="weather icon" />
                   </div>
                 </div>
               ))

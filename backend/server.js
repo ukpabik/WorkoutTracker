@@ -31,6 +31,7 @@ pool.connect()
           duration INT NOT NULL,
           distance DECIMAL NOT NULL,
           heart_rate INT,
+          weather TEXT,
           date_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         
         )
@@ -136,14 +137,29 @@ app.get('/get-workouts', async (req, res) => {
  * - 200: 'Workout added successfully'
  * - 400: 'Missing required workout data' or 'Error adding workout'
  */
-app.post('/add-workout', (req, res) => {
+app.post('/add-workout', async (req, res) => {
   try {
     // Extracting workout data from request
     const { workout_name, duration, distance, heart_rate } = req.body;
     const date_time = new Date().toLocaleString();
 
+    // Get weather data using Chapel Hill lat and lon
+    const weatherData = await axios.get(`https://api.openweathermap.org/data/2.5/weather`,
+      {
+        params: {
+          lat: 35.913200,
+          lon: -79.055847,
+          appid: process.env.OPENWEATHER_API_KEY
+        }
+      }
+    )
+    
+    // console.log(weatherData.data.weather[0]) TESTING
 
+    const extracted = weatherData.data.weather[0];
+    const weatherIcon = extracted.icon;
 
+    const weather = `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`
 
     // Making sure request has all fields
     if (!duration || !distance || !workout_name || !heart_rate) {
@@ -157,7 +173,8 @@ app.post('/add-workout', (req, res) => {
       duration,
       distance,
       heart_rate,
-      date_time
+      date_time,
+      weather
     }
 
     // Add workout to database
@@ -179,8 +196,8 @@ app.post('/add-workout', (req, res) => {
 async function addNewWorkout(data) {
   try {
     const query = {
-      text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time) VALUES($1, $2, $3, $4, $5)',
-      values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time]
+      text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time, weather) VALUES($1, $2, $3, $4, $5, $6)',
+      values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time, data.weather]
     }
 
     await pool.query(query);
