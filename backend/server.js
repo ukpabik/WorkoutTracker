@@ -73,7 +73,8 @@ app.use(express.json());
  * - min_distance: (decimal) Minimum distance (in miles).
  * - max_distance: (decimal) Maximum distance (in miles).
  * - heart_rate: (int) Exact heart rate.
- * - date_time: (string) Exact date and time.
+ * - start_date: (string) Start date of workout.
+ * - end_date: (string) End date of workout.
  * 
  * Response:
  * - 200: Array of workout objects.
