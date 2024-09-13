@@ -163,7 +163,7 @@ The frontend will be accessible at http://localhost:5173
      ```json
      {
        "workout_name": "Morning Run",
-       "duration": 3600,
+       "duration": 35,
        "distance": 5.0,
        "heart_rate": 120
      }
