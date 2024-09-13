@@ -144,7 +144,7 @@ function HomepageComp() {
 
         await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, {
           workout_name: workoutForm.workout_name,
-          duration: workoutForm.duration * 60,
+          duration: workoutForm.duration,
           distance: workoutForm.distance,
           heart_rate: workoutForm.heart_rate
         });
@@ -167,10 +167,11 @@ function HomepageComp() {
     }
   };
 
+  // Function to delete a workout
   const deleteWorkout = async (workoutName) => {
     try {
       const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/delete-workout`, {
-        data: { workoutName }
+        data: { workout_name: workoutName }
       });
       alert(`Workout successfully deleted: ${workoutName}`);
       fetchWorkouts();
@@ -343,7 +344,7 @@ function HomepageComp() {
                 <div key={index} className='workout-item'>
                   <div className='workout-details'>
                     <span>{workout.workout_name}</span>
-                    <span title='Duration'><img className='icons' src="time-icon.svg" alt="duration icon" /> {Math.round(workout.duration / 60)} min</span>
+                    <span title='Duration'><img className='icons' src="time-icon.svg" alt="duration icon" /> {Math.round(workout.duration)} min</span>
                     <span title='Distance'><img className='icons' src="distance-icon.svg" alt="distance icon" /> {workout.distance} mi</span>
                     <span title='Heart Rate'><img className='icons' src="heart-icon.svg" alt="heart icon" /> {workout.heart_rate} bpm</span>
                     <span title='Calories'><img className='icons' src="calorie-icon.svg" alt="calories icon" /> {workout.calories_burned} cal</span>

@@ -89,8 +89,8 @@ app.get('/get-workouts', async (req, res) => {
   try {
     const filters = {
       workout_name: req.query.workout_name,
-      min_duration: req.query.min_duration * 60,
-      max_duration: req.query.max_duration * 60,
+      min_duration: req.query.min_duration,
+      max_duration: req.query.max_duration,
       min_distance: req.query.min_distance,
       max_distance: req.query.max_distance,
       heart_rate: req.query.heart_rate
@@ -179,7 +179,7 @@ app.get('/get-average-duration/:timeFrame', async (req, res) => {
     const { timeFrame } = req.params;
     const avg = await pool.query(`SELECT AVG(duration) AS avg_duration FROM workouts WHERE date_trunc($1, date_time) = date_trunc($1, NOW())`, [timeFrame]);
 
-    const averageDuration = (avg.rows[0].avg_duration) / 60 || 0;
+    const averageDuration = Math.round((avg.rows[0].avg_duration) / 60) || 0;
 
     res.status(200).json({ avg_duration: averageDuration });
   }
@@ -281,26 +281,30 @@ app.get('/get-average-calories/:timeFrame', async (req, res) => {
  */
 app.post('/add-workout', async (req, res) => {
   try {
+
     // Extracting workout data from request
     const { workout_name, duration, distance, heart_rate } = req.body;
-    const date_time = new Date().toLocaleString();
+    const date_time = new Date().toISOString(); 
+
+    // Making sure request has all fields
+    if (!duration || !distance || !workout_name || !heart_rate) {
+      return res.status(400).send('Missing required workout data');
+    }
 
     // Get weather data using Chapel Hill lat and lon
-    const weatherData = await axios.get(`https://api.openweathermap.org/data/2.5/weather`,
-      {
-        params: {
-          lat: 35.913200,
-          lon: -79.055847,
-          appid: process.env.OPENWEATHER_API_KEY
-        }
+    const weatherData = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
+      params: {
+        lat: 35.913200,
+        lon: -79.055847,
+        appid: process.env.OPENWEATHER_API_KEY
       }
-    )
+    });
 
     // POST REQUEST THAT RETURNS THE AMOUNT OF CALORIES BURNED WHILE RUNNING FOR A SPECIFIC DURATION
     const result = await axios.post(
       'https://trackapi.nutritionix.com/v2/natural/exercise',
       {
-        query: `${Math.round(duration / 60)} minutes of running`,
+        query: `${Math.round(duration)} minutes of running`,
       },
       {
         headers: {
@@ -310,19 +314,15 @@ app.post('/add-workout', async (req, res) => {
       }
     );
 
+    console.log(result.data.exercises[0]);
     const calories_burned = Math.round(result.data.exercises[0].nf_calories);
 
+    
     const extracted = weatherData.data.weather[0];
     const weatherIcon = extracted.icon;
 
-    const weather = `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`
-
-    // Making sure request has all fields
-    if (!duration || !distance || !workout_name || !heart_rate) {
-      return res.status(400).send('Missing required workout data');
-    }
-
-
+    const weather = `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`;
+    
     // Putting all data into one object
     const workout = {
       workout_name,
@@ -332,18 +332,22 @@ app.post('/add-workout', async (req, res) => {
       date_time,
       weather,
       calories_burned
-    }
+    };
 
     // Add workout to database
-    addNewWorkout(workout);
+    await addNewWorkout(workout);
 
-    res.status(200).send(`Workout added successfully: ${JSON.stringify(workout)}`)
-
+    res.status(200).send(`Workout added successfully: ${JSON.stringify(workout)}`);
   }
   catch (err) {
-    res.status(400).send('Error adding workout: ', err);
+    // PostgreSQL unique violation error code
+    if (err.code === '23505') { 
+      res.status(400).send('Workout with this name already exists.');
+    } 
+    else {
+      res.status(400).send(`Error adding workout: ${err.message}`);
+    }
   }
-
 });
 
 
@@ -366,11 +370,20 @@ app.post('/add-workout', async (req, res) => {
  */
 app.delete('/delete-workout', async (req, res) => {
   try {
-    const workoutName = req.body.workoutName;
+    const { workout_name } = req.body;
 
-    await pool.query('DELETE FROM workouts WHERE workout_name = $1', [workoutName]);
+    if (!workout_name) {
+      return res.status(400).send('Missing workout_name in request body.');
+    }
 
-    res.status(200).send(`Workout deleted successfully: ${JSON.stringify(workoutName)}`);
+    const result = await pool.query('DELETE FROM workouts WHERE workout_name = $1', [workout_name]);
+
+
+    // Check to see if any rows were affected, if not, the workout wasnt found in the db
+    if (result.rowCount === 0) {
+      return res.status(404).send(`Workout not found: ${workout_name}`);
+    }
+    res.status(200).send(`Workout deleted successfully: ${JSON.stringify(workout_name)}`);
   }
 
   catch (err) {
@@ -387,17 +400,12 @@ app.delete('/delete-workout', async (req, res) => {
  * @param {*} data The workout data
  */
 async function addNewWorkout(data) {
-  try {
-    const query = {
-      text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time, weather, calories_burned) VALUES($1, $2, $3, $4, $5, $6, $7)',
-      values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time, data.weather, data.calories_burned]
-    }
+  const query = {
+    text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time, weather, calories_burned) VALUES($1, $2, $3, $4, $5, $6, $7)',
+    values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time, data.weather, data.calories_burned]
+  }
 
-    await pool.query(query);
-  }
-  catch (err) {
-    console.log('Error entering workout to DB:', err);
-  }
+  await pool.query(query);
 }
 
 
@@ -505,6 +513,7 @@ function parseDateRange(startDate, endDate) {
 
   return { start_time, end_time };
 }
+
 
 
 
