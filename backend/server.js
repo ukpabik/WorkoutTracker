@@ -98,8 +98,7 @@ app.get('/get-workouts', async (req, res) => {
 
     // Get the correct parsed start and ending time
     const { start_time, end_time } = parseDateRange(req.query.start_date, req.query.end_date);
-    // console.log('Parsed Start Time:', start_time); TESTING
-    // console.log('Parsed End Time:', end_time); TESTING
+
     if (start_time) filters.start_time = start_time;
     if (end_time) filters.end_time = end_time;
 
@@ -313,8 +312,6 @@ app.post('/add-workout', async (req, res) => {
 
     const calories_burned = Math.round(result.data.exercises[0].nf_calories);
 
-    // console.log(weatherData.data.weather[0]) TESTING
-
     const extracted = weatherData.data.weather[0];
     const weatherIcon = extracted.icon;
 
@@ -460,8 +457,6 @@ async function getWorkouts(filters = {}) {
       query += ` AND date_time < $${params.length}`;
     }
 
-    // console.log('Start Time:', filters.start_time); TESTING
-    // console.log('End Time:', filters.end_time); TESTING
 
     const response = await pool.query(query, params);
 
@@ -483,7 +478,6 @@ async function getWorkouts(filters = {}) {
  * @returns The parsed date range.
  */
 function parseDateRange(startDate, endDate) {
-  // console.log(startDate + ' : ' + endDate); TESTING
   let start_time, end_time;
   const now = moment();
 
@@ -498,10 +492,8 @@ function parseDateRange(startDate, endDate) {
 
   // Parse end date
   if (endDate === 'today') {
-    // console.log(`Time: ${now.endOf('day').toISOString()}`); TESTING
     end_time = now.endOf('day').toISOString();
   } else if (endDate === 'yesterday') {
-    // console.log(`Time: ${now.endOf('day').toISOString()}`); TESTING
     end_time = moment().subtract(1, 'days').endOf('day').toISOString();
   } else if (endDate) {
     // Start of day given
