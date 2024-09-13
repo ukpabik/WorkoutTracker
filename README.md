@@ -81,7 +81,7 @@ This project is a workout tracking application consisting of a backend API and a
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/yourusername/yourrepository.git
+git clone https://github.com/ukpabik/WorkoutTracker.git
 cd yourrepository
 ```
 
