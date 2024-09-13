@@ -179,7 +179,7 @@ app.get('/get-average-duration/:timeFrame', async (req, res) => {
     const { timeFrame } = req.params;
     const avg = await pool.query(`SELECT AVG(duration) AS avg_duration FROM workouts WHERE date_trunc($1, date_time) = date_trunc($1, NOW())`, [timeFrame]);
 
-    const averageDuration = Math.round((avg.rows[0].avg_duration) / 60) || 0;
+    const averageDuration = Math.round((avg.rows[0].avg_duration)) || 0;
 
     res.status(200).json({ avg_duration: averageDuration });
   }
@@ -284,7 +284,7 @@ app.post('/add-workout', async (req, res) => {
 
     // Extracting workout data from request
     const { workout_name, duration, distance, heart_rate } = req.body;
-    const date_time = new Date().toISOString(); 
+    const date_time = new Date().toISOString();
 
     // Making sure request has all fields
     if (!duration || !distance || !workout_name || !heart_rate) {
@@ -314,15 +314,14 @@ app.post('/add-workout', async (req, res) => {
       }
     );
 
-    console.log(result.data.exercises[0]);
     const calories_burned = Math.round(result.data.exercises[0].nf_calories);
 
-    
+
     const extracted = weatherData.data.weather[0];
     const weatherIcon = extracted.icon;
 
     const weather = `https://openweathermap.org/img/wn/${weatherIcon}@2x.png`;
-    
+
     // Putting all data into one object
     const workout = {
       workout_name,
@@ -341,9 +340,9 @@ app.post('/add-workout', async (req, res) => {
   }
   catch (err) {
     // PostgreSQL unique violation error code
-    if (err.code === '23505') { 
+    if (err.code === '23505') {
       res.status(400).send('Workout with this name already exists.');
-    } 
+    }
     else {
       res.status(400).send(`Error adding workout: ${err.message}`);
     }

@@ -4,23 +4,32 @@ import FootComp from './FootComp';
 import Navbar from './Navbar';
 
 function HomepageComp() {
-
-
+  // State to store the list of workouts
   const [workouts, setWorkouts] = useState([]);
+
+  // State to control the sorting order of workouts (ascending/descending)
   const [reverse, setReverse] = useState(false);
+
+  // State to store the selected timeframe for fetching average data
   const [timeFrame, setTimeFrame] = useState('day');
+
+  // State to store average and total statistics related to workouts
   const [averageData, setAverageData] = useState({
     averageCalories: 0,
     averageDuration: 0,
     totalDistance: 0,
     averageHeartRate: 0
   });
+
+  // State to manage the form inputs for adding a new workout
   const [workoutForm, setWorkoutForm] = useState({
     workout_name: '',
     duration: '',
     distance: '',
     heart_rate: ''
   });
+
+  // State to manage the filter inputs for fetching workouts
   const [filters, setFilters] = useState({
     workout_name: '',
     min_duration: '',
@@ -31,51 +40,78 @@ function HomepageComp() {
     start_date: '',
     end_date: ''
   });
+
+  // State to control the visibility of the filter dropdown
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-
+  /**
+   * toggleFilterBar Function
+   * ------------------------
+   * Toggles the visibility of the filter dropdown.
+   */
   const toggleFilterBar = () => {
     setIsFilterOpen(!isFilterOpen);
   };
 
-
-  // Function that fetches the workouts based on provided filters
+  /**
+   * fetchWorkouts Function
+   * -----------------------
+   * Fetches the list of workouts from the backend based on the applied filters.
+   * Converts the filters object into URL query parameters.
+   */
   const fetchWorkouts = async () => {
     try {
       const query = new URLSearchParams();
+      // Iterate over each filter and append it to the query if it's not empty
       for (const key in filters) {
         if (filters[key]) {
           query.append(key, filters[key]);
         }
       }
+      // Make a GET request to the backend with the query parameters
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-workouts?${query.toString()}`);
+      // Update the workouts state with the fetched data
       setWorkouts(response.data);
     } catch (err) {
       console.error("Error fetching workouts:", err);
     }
   };
 
-  // Function that fetches average and total data
+  /**
+   * fetchAverageData Function
+   * --------------------------
+   * Fetches average and total statistics related to workouts based on the selected timeframe.
+   * Makes multiple GET requests to different endpoints to gather all necessary data.
+   */
   const fetchAverageData = async () => {
     try {
+      // Fetch average calories burned
       const avgCalories = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-average-calories/${timeFrame}`);
+      // Fetch total distance covered
       const totDistance = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-total-distance/${timeFrame}`);
+      // Fetch average workout duration
       const avgDuration = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-average-duration/${timeFrame}`);
+      // Fetch average heart rate
       const avgHeartRate = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-average-heartrate/${timeFrame}`);
+
+      // Update the averageData state with the fetched statistics
       setAverageData({
         averageCalories: avgCalories.data.avg_calories,
         totalDistance: totDistance.data.total_distance,
         averageDuration: avgDuration.data.avg_duration,
         averageHeartRate: avgHeartRate.data.avg_heartrate
-
       });
     } catch (err) {
       console.error('Error fetching average data:', err);
     }
   };
 
-
-  // Handling change of inputs in workout submission form
+  /**
+   * handleInputChange Function
+   * --------------------------
+   * Handles changes in the workout submission form inputs.
+   * Updates the workoutForm state with the new input values.
+   */
   const handleInputChange = (event) => {
     const { name, value } = event.target;
 
@@ -85,7 +121,12 @@ function HomepageComp() {
     });
   };
 
-  // Handling change of filters
+  /**
+   * handleFilterChange Function
+   * ---------------------------
+   * Handles changes in the filter inputs.
+   * Updates the filters state with the new filter values.
+   */
   const handleFilterChange = (e) => {
     setFilters({
       ...filters,
@@ -93,17 +134,25 @@ function HomepageComp() {
     });
   };
 
-  // Handling checkbox
+  /**
+   * handleCheckbox Function
+   * -----------------------
+   * Toggles the sorting order of the workouts list.
+   * If reverse is true, workouts are sorted in ascending order; otherwise, descending.
+   */
   const handleCheckbox = () => {
     setReverse(!reverse);
   };
 
-
-
-
-  // Function to format the dates out of iso form
+  /**
+   * formatDate Function
+   * -------------------
+   * Formats an ISO date string into a more readable format.
+   *
+   * @param {string} isoDate - The ISO date string to format.
+   * @returns {string} - The formatted date and time string.
+   */
   function formatDate(isoDate) {
-
     const date = new Date(isoDate);
     const timeOptions = {
       hour: 'numeric',
@@ -117,71 +166,107 @@ function HomepageComp() {
       month: 'short',
       day: 'numeric',
     };
+
+    // Format time and date separately
     const formattedTime = date.toLocaleString('en-US', timeOptions);
     const formattedDate = date.toLocaleString('en-US', dateOptions);
 
     return `${formattedTime} | ${formattedDate}`;
   }
 
-
+  /**
+   * useEffect Hook
+   * --------------
+   * Fetches workouts and average data whenever the filters or timeframe change.
+   */
   useEffect(() => {
     fetchWorkouts();
     fetchAverageData();
   }, [filters, timeFrame]);
 
-
-
-
-  // Function to add a workout (used with add workout form)
+  /**
+   * handleSubmit Function
+   * ---------------------
+   * Handles the submission of the add workout form.
+   * Validates if the workout name already exists to prevent duplicates.
+   * Sends a POST request to add the new workout and updates the state accordingly.
+   *
+   * @param {Event} event - The form submission event from the add workout button.
+   */
   const handleSubmit = async (event) => {
     event.preventDefault();
 
     try {
-
+      // Check if a workout with the same name already exists
       const workoutNameExists = workouts.some(workout => workout.workout_name === workoutForm.workout_name);
 
       if (!workoutNameExists) {
-
+        // Send a POST request to add the new workout
         await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, {
           workout_name: workoutForm.workout_name,
           duration: workoutForm.duration,
           distance: workoutForm.distance,
           heart_rate: workoutForm.heart_rate
         });
+
+        // Alert the user of successful addition
         alert(`Workout successfully added: ${workoutForm.workout_name}`);
-        // Reset form
+
+        // Reset the workout form inputs
         setWorkoutForm({
           workout_name: '',
           duration: '',
           distance: '',
           heart_rate: ''
         });
+
+        // Fetch updated workouts and average data
         fetchWorkouts();
         fetchAverageData();
       }
       else {
+        // Alert the user if the workout name already exists
         alert("Workout name already exists. Please choose a different name.");
       }
     } catch (err) {
       console.error("Error adding workout:", err);
+
     }
   };
 
-  // Function to delete a workout
+  /**
+   * deleteWorkout Function
+   * ----------------------
+   * Handles the deletion of a workout.
+   * Sends a DELETE request to remove the specified workout and updates the state accordingly.
+   *
+   * @param {string} workoutName - The name of the workout to delete.
+   */
   const deleteWorkout = async (workoutName) => {
     try {
+      // Send a DELETE request with the workout name in the request body
       const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/delete-workout`, {
         data: { workout_name: workoutName }
       });
+
+      // Alert the user of successful deletion
       alert(`Workout successfully deleted: ${workoutName}`);
+
+      // Fetch updated workouts and average data
       fetchWorkouts();
       fetchAverageData();
     }
     catch (err) {
       console.error('Error deleting workout:', err);
+
     }
   }
 
+  /**
+   * toggleTimeFrame Function
+   * ------------------------
+   * Toggles the timeframe for fetching average data between 'day', 'week', and 'month'.
+   */
   const toggleTimeFrame = () => {
     const nextTimeFrame = timeFrame === 'day' ? 'week' : timeFrame === 'week' ? 'month' : 'day';
     setTimeFrame(nextTimeFrame);
