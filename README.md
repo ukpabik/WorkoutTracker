@@ -136,7 +136,6 @@ npm run dev
 The frontend will be accessible at http://localhost:5173
 
 ## Testing the API
-## Testing the API
 
 1. **Create an Account or Log into Postman**
    - Download and install Postman from [Postman Website](https://www.postman.com/downloads/).
