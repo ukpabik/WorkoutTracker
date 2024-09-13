@@ -135,3 +135,53 @@ npm run dev
 ```
 The frontend will be accessible at http://localhost:5173
 
+## Testing the API
+## Testing the API
+
+1. **Create an Account or Log into Postman**
+   - Download and install Postman from [Postman Website](https://www.postman.com/downloads/).
+   - Open Postman and either log into your existing account or create a new one.
+
+2. **Set Up a New Request**
+   - Click on **New** in the top left corner.
+   - Select **Request** from the options.
+   - Name your request (e.g., "Add Workout") and click **Save to Collection**.
+
+3. **Select HTTP Method**
+   - Choose the appropriate HTTP method (e.g., `GET`, `POST`, `DELETE`) for the API endpoint you want to test.
+
+4. **Enter the Request URL**
+   - Enter the full URL for the endpoint you want to test. Here are some example URLs:
+     - **Add Workout** (POST): `http://localhost:your_port_number/add-workout`
+     - **Get All Workouts** (GET): `http://localhost:your_port_number/get-workouts`
+     - **Delete Workout** (DELETE): `http://localhost:your_port_number/delete-workout`
+   - Replace `your_port_number` with the port number for your server.
+
+5. **Add Request Body (for POST/PUT requests)**
+   - If you're making a `POST` request, go to the **Body** tab.
+   - Select **raw** and set the format to **JSON**.
+   - Enter the JSON data, for example:
+     ```json
+     {
+       "workout_name": "Morning Run",
+       "duration": 3600,
+       "distance": 5.0,
+       "heart_rate": 120
+     }
+     ```
+
+6. **Send the Request**
+   - Once everything is set up, click **Send** to execute the request.
+   - You will see the response from the server in the bottom panel of Postman.
+
+7. **Check the Response**
+   - The API response will show up in the response panel. You can view the status, response data, and any error messages returned by the API.
+
+8. **Repeat for Other Endpoints**
+   - Create new requests in Postman for testing other endpoints by following the same process for each.
+
+9. **Optional: Add Query Parameters**
+   - For `GET` requests that allow query parameters (e.g., filtering workouts), add parameters in the **Params** tab. For example:
+     - `http://localhost:your_port_number/get-workouts?workout_name=Run&start_date=2024-09-12`
+   
+By following these steps, you can test all the API endpoints using Postman.
