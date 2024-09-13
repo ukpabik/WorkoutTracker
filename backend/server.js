@@ -399,7 +399,7 @@ async function addNewWorkout(data) {
     await pool.query(query);
   }
   catch (err) {
-    console.error('Error entering workout to DB:', err);
+    console.log('Error entering workout to DB:', err);
   }
 }
 

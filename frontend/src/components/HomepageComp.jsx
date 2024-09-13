@@ -42,13 +42,14 @@ function HomepageComp() {
   // Function that fetches the workouts based on provided filters
   const fetchWorkouts = async () => {
     try {
-
-      // Uses url search params api to turn filters into a search query
-      const query = new URLSearchParams(filters).toString();
-      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-workouts?${query}`);
-
+      const query = new URLSearchParams();
+      for (const key in filters) {
+        if (filters[key]) {
+          query.append(key, filters[key]);
+        }
+      }
+      const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-workouts?${query.toString()}`);
       setWorkouts(response.data);
-
     } catch (err) {
       console.error("Error fetching workouts:", err);
     }
@@ -147,7 +148,7 @@ function HomepageComp() {
           distance: workoutForm.distance,
           heart_rate: workoutForm.heart_rate
         });
-
+        alert(`Workout successfully added: ${workoutForm.workout_name}`);
         // Reset form
         setWorkoutForm({
           workout_name: '',
@@ -155,9 +156,8 @@ function HomepageComp() {
           distance: '',
           heart_rate: ''
         });
-
         fetchWorkouts();
-
+        fetchAverageData();
       }
       else {
         alert("Workout name already exists. Please choose a different name.");
@@ -174,6 +174,7 @@ function HomepageComp() {
       });
       alert(`Workout successfully deleted: ${workoutName}`);
       fetchWorkouts();
+      fetchAverageData();
     }
     catch (err) {
       console.error('Error deleting workout:', err);
@@ -259,7 +260,7 @@ function HomepageComp() {
                   onChange={handleFilterChange}
                 />
                 <div className='sort-box'>
-                  <label className='sort-label' htmlFor="Sort By Date">{reverse ? "Date ↓" : "Date ↑"}</label>
+                  <label className='sort-label' htmlFor="Sort By Date">{!reverse ? "Date ↓" : "Date ↑"}</label>
                   <input
                     type="checkbox"
                     name='Sort By Date'
@@ -327,10 +328,10 @@ function HomepageComp() {
           </div>
           <div className='average-data-container'>
             <div className='average-data add-workout-form'>
-              <span>Average Calories: {averageData.averageCalories} kcal</span>
-              <span>Average Duration: {averageData.averageDuration} min</span>
-              <span>Average Heart-Rate: {averageData.averageHeartRate} bpm</span>
-              <span>Total Distance: {averageData.totalDistance} mi</span>
+              <span>Average Calories: {Math.round(averageData.averageCalories)} kcal</span>
+              <span>Average Duration: {Math.round(averageData.averageDuration)} min</span>
+              <span>Average Heart-Rate: {Math.round(averageData.averageHeartRate)} bpm</span>
+              <span>Total Distance: {Math.round(averageData.totalDistance)} mi</span>
               <button onClick={toggleTimeFrame}>Time Frame: {timeFrame}</button>
             </div>
           </div>
@@ -338,7 +339,7 @@ function HomepageComp() {
           <div className='workouts-container'>
             <p className='workouts-container-title'>Workouts</p>
             {workouts.length > 0 ? (
-              (reverse ? workouts.slice().reverse() : workouts).map((workout, index) => (
+              (!reverse ? workouts.slice().reverse() : workouts).map((workout, index) => (
                 <div key={index} className='workout-item'>
                   <div className='workout-details'>
                     <span>{workout.workout_name}</span>
