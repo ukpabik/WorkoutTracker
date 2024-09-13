@@ -8,6 +8,13 @@ function HomepageComp() {
 
   const [workouts, setWorkouts] = useState([]);
   const [reverse, setReverse] = useState(false);
+  const [timeFrame, setTimeFrame] = useState('day');
+  const [averageData, setAverageData] = useState({
+    averageCalories: 0,
+    averageDuration: 0,
+    totalDistance: 0,
+    averageHeartRate: 0
+  });
   const [workoutForm, setWorkoutForm] = useState({
     workout_name: '',
     duration: '',
@@ -47,6 +54,24 @@ function HomepageComp() {
     }
   };
 
+  // Function that fetches average and total data
+  const fetchAverageData = async () => {
+    try {
+      const avgCalories = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-average-calories/${timeFrame}`);
+      const totDistance = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-total-distance/${timeFrame}`);
+      const avgDuration = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-average-duration/${timeFrame}`);
+      const avgHeartRate = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-average-heartrate/${timeFrame}`);
+      setAverageData({
+        averageCalories: avgCalories.data.avg_calories,
+        totalDistance: totDistance.data.total_distance,
+        averageDuration: avgDuration.data.avg_duration,
+        averageHeartRate: avgHeartRate.data.avg_heartrate
+
+      });
+    } catch (err) {
+      console.error('Error fetching average data:', err);
+    }
+  };
 
 
   // Handling change of inputs in workout submission form
@@ -77,23 +102,31 @@ function HomepageComp() {
 
   // Function to format the dates out of iso form
   function formatDate(isoDate) {
+
     const date = new Date(isoDate);
-    const options = {
+    const timeOptions = {
       hour: 'numeric',
-      minute: 'numeric',
+      minute: '2-digit',
       hour12: true,
-      month: 'numeric',
-      day: 'numeric',
-      year: 'numeric'
+      timeZone: 'UTC'
     };
-    const formattedDate = date.toLocaleString('en-US', options).split(',');
-    return formattedDate[1] + " | " + formattedDate[0];
+
+    // Format options for date
+    const dateOptions = {
+      month: 'short',
+      day: 'numeric',
+    };
+    const formattedTime = date.toLocaleString('en-US', timeOptions);
+    const formattedDate = date.toLocaleString('en-US', dateOptions);
+
+    return `${formattedTime} | ${formattedDate}`;
   }
 
 
   useEffect(() => {
     fetchWorkouts();
-  }, [filters]);
+    fetchAverageData();
+  }, [filters, timeFrame]);
 
 
 
@@ -123,13 +156,12 @@ function HomepageComp() {
           heart_rate: ''
         });
 
-
+        fetchWorkouts();
 
       }
       else {
         alert("Workout name already exists. Please choose a different name.");
       }
-      fetchWorkouts();
     } catch (err) {
       console.error("Error adding workout:", err);
     }
@@ -138,7 +170,7 @@ function HomepageComp() {
   const deleteWorkout = async (workoutName) => {
     try {
       const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/delete-workout`, {
-        data: { workoutName } 
+        data: { workoutName }
       });
       alert(`Workout successfully deleted: ${workoutName}`);
       fetchWorkouts();
@@ -147,6 +179,11 @@ function HomepageComp() {
       console.error('Error deleting workout:', err);
     }
   }
+
+  const toggleTimeFrame = () => {
+    const nextTimeFrame = timeFrame === 'day' ? 'week' : timeFrame === 'week' ? 'month' : 'day';
+    setTimeFrame(nextTimeFrame);
+  };
 
   return (
     <>
@@ -288,6 +325,15 @@ function HomepageComp() {
             </div>
 
           </div>
+          <div className='average-data-container'>
+            <div className='average-data add-workout-form'>
+              <span>Average Calories: {averageData.averageCalories} kcal</span>
+              <span>Average Duration: {averageData.averageDuration} min</span>
+              <span>Average Heart-Rate: {averageData.averageHeartRate} bpm</span>
+              <span>Total Distance: {averageData.totalDistance} mi</span>
+              <button onClick={toggleTimeFrame}>Time Frame: {timeFrame}</button>
+            </div>
+          </div>
 
           <div className='workouts-container'>
             <p className='workouts-container-title'>Workouts</p>
@@ -297,13 +343,14 @@ function HomepageComp() {
                   <div className='workout-details'>
                     <span>{workout.workout_name}</span>
                     <span title='Duration'><img className='icons' src="time-icon.svg" alt="duration icon" /> {Math.round(workout.duration / 60)} min</span>
-                    <span title='Distance'><img className='icons' src="distance-icon.svg" alt="distance icon" /> {workout.distance} miles</span>
+                    <span title='Distance'><img className='icons' src="distance-icon.svg" alt="distance icon" /> {workout.distance} mi</span>
                     <span title='Heart Rate'><img className='icons' src="heart-icon.svg" alt="heart icon" /> {workout.heart_rate} bpm</span>
+                    <span title='Calories'><img className='icons' src="calorie-icon.svg" alt="calories icon" /> {workout.calories_burned} cal</span>
                     <span title='Time' style={{
                       fontSize: '0.8rem'
-                    }}>Time: {formatDate(workout.date_time)}</span>
-                    <img className='icons' src={workout.weather} alt="weather icon" />
-                    <button className='delete-button' title={workout.workout_name} onClick={(e) => deleteWorkout(e.target.title)}><img title={workout.workout_name} className='delete-icon' src='delete-icon.svg'/></button>
+                    }}>{formatDate(workout.date_time)}</span>
+                    <img title='Weather' className='icons' src={workout.weather} alt="weather icon" />
+                    <button className='delete-button' title={workout.workout_name} onClick={(e) => deleteWorkout(e.target.title)}><img title={workout.workout_name} className='delete-icon' src='delete-icon.svg' /></button>
                   </div>
                 </div>
               ))

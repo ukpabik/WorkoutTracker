@@ -32,8 +32,9 @@ pool.connect()
           distance DECIMAL NOT NULL,
           heart_rate INT,
           weather TEXT,
+          calories_burned INT NOT NULL,
           date_time TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-        
+
         )
       
       
@@ -69,17 +70,17 @@ app.use(express.json());
  * 
  * Query Parameters (Optional):
  * - workout_name: (string) Partial or full match on workout name.
- * - min_duration: (int) Minimum duration (in seconds).
- * - max_duration: (int) Maximum duration (in seconds).
+ * - min_duration: (int) Minimum duration (in minutes).
+ * - max_duration: (int) Maximum duration (in minutes).
  * - min_distance: (decimal) Minimum distance (in miles).
  * - max_distance: (decimal) Maximum distance (in miles).
  * - heart_rate: (int) Exact heart rate.
- * - start_date: (string) Start date of workout.
- * - end_date: (string) End date of workout.
+ * - start_date: (string) Start date in YYYY-MM-DD format or using keywords like today, yesterday, etc.
+ * - end_date: (string) End date in YYYY-MM-DD format or using keywords like today, yesterday, etc.
  * 
  * Response:
- * - 200: Array of workout objects.
- * - 400: 'Unable to retrieve workouts'
+ * - 200: Returns an array of workout objects.
+ * - 400: Returns an error message indicating it cannot retrieve workouts.
  * 
  * Example query: http://localhost:PORT/get-workouts?start_date=yesterday&end_date=yesterday
  *  Gets all workouts from yesterday
@@ -88,8 +89,8 @@ app.get('/get-workouts', async (req, res) => {
   try {
     const filters = {
       workout_name: req.query.workout_name,
-      min_duration: req.query.min_duration,
-      max_duration: req.query.max_duration,
+      min_duration: req.query.min_duration * 60,
+      max_duration: req.query.max_duration * 60,
       min_distance: req.query.min_distance,
       max_distance: req.query.max_distance,
       heart_rate: req.query.heart_rate
@@ -119,6 +120,149 @@ app.get('/get-workouts', async (req, res) => {
 
 
 /**
+ * GET /get-total-distance/:timeframe
+ * ------------------------------------
+ * 
+ * Retrieves the total distance covered in workouts
+ * within the specified timeframe.
+ * 
+ * Method: GET
+ * URL: /get-total-distance/:timeframe
+ * 
+ * Parameters
+ * - timeframe (string): Timeframe for aggregation. Accepts day, week, month, year, etc.
+ * 
+ * Responses:
+ * - 200 OK: Returns the total distance in miles within the specified timeframe.
+ * - 400 Bad Request: Returns an error message indicating unable to retrieve data.
+ * 
+ * Example query: http://localhost:PORT/get-total-distance/week
+ * Returns the total distance within the current week.
+ */
+app.get('/get-total-distance/:timeFrame', async (req, res) => {
+  try {
+    const { timeFrame } = req.params;
+    const total = await pool.query(`SELECT SUM(distance) AS total_distance FROM workouts WHERE date_trunc($1, date_time) = date_trunc($1, NOW())`, [timeFrame]);
+
+    const totalDistance = total.rows[0].total_distance || 0;
+
+    res.status(200).json({ total_distance: totalDistance });
+  }
+  catch (err) {
+    console.error('Error retrieving total distance:', err);
+    res.status(400).send('Unable to retrieve total distance');
+  }
+});
+
+
+/**
+ * GET /get-average-duration/:timeframe
+ * ------------------------------------
+ * 
+ * Retrieves the average workout duration
+ * within the specified timeframe.
+ * 
+ * Method: GET
+ * URL: /get-average-duration/:timeframe
+ * 
+ * Parameters
+ * - timeframe (string): Timeframe for aggregation. Accepts day, week, month, year, etc.
+ * 
+ * Responses:
+ * - 200 OK: Returns the average duration in minutes within the specified timeframe.
+ * - 400 Bad Request: Returns an error message indicating unable to retrieve data.
+ * 
+ * Example query: http://localhost:PORT/get-average-duration/week
+ * Returns the average duration within the current week.
+ */
+app.get('/get-average-duration/:timeFrame', async (req, res) => {
+  try {
+    const { timeFrame } = req.params;
+    const avg = await pool.query(`SELECT AVG(duration) AS avg_duration FROM workouts WHERE date_trunc($1, date_time) = date_trunc($1, NOW())`, [timeFrame]);
+
+    const averageDuration = (avg.rows[0].avg_duration) / 60 || 0;
+
+    res.status(200).json({ avg_duration: averageDuration });
+  }
+  catch (err) {
+    console.error('Error retrieving average duration:', err);
+    res.status(400).send('Unable to retrieve average duration');
+  }
+});
+
+/**
+ * GET /get-average-heartrate/:timeframe
+ * ------------------------------------
+ * 
+ * Retrieves the average heartrate
+ * within the specified timeframe.
+ * 
+ * Method: GET
+ * URL: /get-average-heartrate/:timeframe
+ * 
+ * Parameters
+ * - timeframe (string): Timeframe for aggregation. Accepts day, week, month, year, etc.
+ * 
+ * Responses:
+ * - 200 OK: Returns the average heartrate in bpm within the specified timeframe.
+ * - 400 Bad Request: Returns an error message indicating unable to retrieve data.
+ * 
+ * Example query: http://localhost:PORT/get-average-heartrate/week
+ * Returns the average heartrate within the current week.
+ */
+app.get('/get-average-heartrate/:timeFrame', async (req, res) => {
+  try {
+    const { timeFrame } = req.params;
+    const avg = await pool.query(`SELECT AVG(heart_rate) AS avg_heartrate FROM workouts WHERE date_trunc($1, date_time) = date_trunc($1, NOW())`, [timeFrame]);
+
+    const averageHeartRate = Math.round(avg.rows[0].avg_heartrate) || 0;
+
+    res.status(200).json({ avg_heartrate: averageHeartRate });
+  }
+  catch (err) {
+    console.error('Error retrieving average heart rate:', err);
+    res.status(400).send('Unable to retrieve average heart rate');
+  }
+});
+
+/**
+ * GET /get-average-calories/:timeframe
+ * ------------------------------------
+ * 
+ * Retrieves the average calories burned
+ * within the specified timeframe.
+ * 
+ * Method: GET
+ * URL: /get-average-calories/:timeframe
+ * 
+ * Parameters
+ * - timeframe (string): Timeframe for aggregation. Accepts day, week, month, year, etc.
+ * 
+ * Responses:
+ * - 200 OK: Returns the average calories burned in kcal within the specified timeframe.
+ * - 400 Bad Request: Returns an error message indicating unable to retrieve data.
+ * 
+ * Example query: http://localhost:PORT/get-average-calories/week
+ * Returns the average calories burned within the current week.
+ */
+app.get('/get-average-calories/:timeFrame', async (req, res) => {
+  try {
+    const { timeFrame } = req.params;
+    const avg = await pool.query(`SELECT AVG(calories_burned) AS avg_calories FROM workouts WHERE date_trunc($1, date_time) = date_trunc($1, NOW())`, [timeFrame]);
+
+    const averageCalories = Math.round(avg.rows[0].avg_calories) || 0;
+
+    res.status(200).json({ avg_calories: averageCalories });
+  }
+  catch (err) {
+    console.error('Error retrieving average calories:', err);
+    res.status(400).send('Unable to retrieve average calories');
+  }
+});
+
+
+
+/**
  * POST /add-workout
  * ----------------------------------------
  * Adds a new workout.
@@ -131,7 +275,6 @@ app.get('/get-workouts', async (req, res) => {
  * - duration (int, required): In seconds.
  * - distance (decimal, required): In kilometers.
  * - heart_rate (int, required)
- * - date_time (optional): Defaults to current timestamp.
  * 
  * Response:
  * - 200: 'Workout added successfully'
@@ -153,7 +296,23 @@ app.post('/add-workout', async (req, res) => {
         }
       }
     )
-    
+
+    // POST REQUEST THAT RETURNS THE AMOUNT OF CALORIES BURNED WHILE RUNNING FOR A SPECIFIC DURATION
+    const result = await axios.post(
+      'https://trackapi.nutritionix.com/v2/natural/exercise',
+      {
+        query: `${Math.round(duration / 60)} minutes of running`,
+      },
+      {
+        headers: {
+          'x-app-id': process.env.NUTRITIONIX_APP_ID,
+          'x-app-key': process.env.NUTRITIONIX_API_KEY,
+        },
+      }
+    );
+
+    const calories_burned = Math.round(result.data.exercises[0].nf_calories);
+
     // console.log(weatherData.data.weather[0]) TESTING
 
     const extracted = weatherData.data.weather[0];
@@ -174,7 +333,8 @@ app.post('/add-workout', async (req, res) => {
       distance,
       heart_rate,
       date_time,
-      weather
+      weather,
+      calories_burned
     }
 
     // Add workout to database
@@ -190,17 +350,33 @@ app.post('/add-workout', async (req, res) => {
 });
 
 
-// Delete request for deleting a workout
+
+/**
+ * DELETE /delete-workout
+ * --------------------------------
+ * 
+ * Deletes a workout from the database based on workout name.
+ * 
+ * Method: DELETE
+ * URL: /delete-workout
+ * 
+ * Request Body (JSON):
+ * - workoutName (string, required): Name of the workout to be deleted.
+ * 
+ * Responses:
+ * - 200 OK: Returns a success alert.
+ * - 400 Bad Request: Returns an error message indicating inability to delete workout.
+ */
 app.delete('/delete-workout', async (req, res) => {
-  try{
+  try {
     const workoutName = req.body.workoutName;
-    
+
     await pool.query('DELETE FROM workouts WHERE workout_name = $1', [workoutName]);
-    
+
     res.status(200).send(`Workout deleted successfully: ${JSON.stringify(workoutName)}`);
   }
 
-  catch(err){
+  catch (err) {
     res.status(400).send('Unable to delete workout:', err);
   }
 })
@@ -216,8 +392,8 @@ app.delete('/delete-workout', async (req, res) => {
 async function addNewWorkout(data) {
   try {
     const query = {
-      text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time, weather) VALUES($1, $2, $3, $4, $5, $6)',
-      values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time, data.weather]
+      text: 'INSERT INTO workouts(workout_name, duration, distance, heart_rate, date_time, weather, calories_burned) VALUES($1, $2, $3, $4, $5, $6, $7)',
+      values: [data.workout_name, data.duration, data.distance, data.heart_rate, data.date_time, data.weather, data.calories_burned]
     }
 
     await pool.query(query);
@@ -231,8 +407,9 @@ async function addNewWorkout(data) {
 
 
 /**
- * Function for getting all workouts
- * @returns All workouts
+ * Function for getting all workouts with filter parameters
+ * @param {{}} [filters={}] The filters for what workouts to display
+ * @returns All workouts within filter range
  */
 async function getWorkouts(filters = {}) {
   try {

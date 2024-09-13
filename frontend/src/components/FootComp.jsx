@@ -1,6 +1,6 @@
 
 
-function FootComp(){
+function FootComp() {
 
   return (
     <footer className='footer-container'>

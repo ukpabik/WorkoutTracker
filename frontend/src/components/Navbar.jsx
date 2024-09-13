@@ -1,10 +1,10 @@
 
-function Navbar(){
-  return(
+function Navbar() {
+  return (
     <header className='header-container'>
       <nav className='navbar'>
         <div>
-          <a href = '/'><p>Workout Tracker</p></a>
+          <a href='/'><p>Workout Tracker</p></a>
         </div>
       </nav>
     </header>
