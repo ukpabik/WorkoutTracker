@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 
 function HomepageComp() {
 
-  
+
   const [workouts, setWorkouts] = useState([]);
   const [reverse, setReverse] = useState(false);
   const [workoutForm, setWorkoutForm] = useState({
@@ -30,7 +30,7 @@ function HomepageComp() {
   const toggleFilterBar = () => {
     setIsFilterOpen(!isFilterOpen);
   };
-  
+
 
   // Function that fetches the workouts based on provided filters
   const fetchWorkouts = async () => {
@@ -39,7 +39,7 @@ function HomepageComp() {
       // Uses url search params api to turn filters into a search query
       const query = new URLSearchParams(filters).toString();
       const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/get-workouts?${query}`);
-      
+
       setWorkouts(response.data);
 
     } catch (err) {
@@ -95,22 +95,22 @@ function HomepageComp() {
     fetchWorkouts();
   }, [filters]);
 
-  
+
 
 
   // Function to add a workout (used with add workout form)
   const handleSubmit = async (event) => {
     event.preventDefault();
-  
+
     try {
-      
+
       const workoutNameExists = workouts.some(workout => workout.workout_name === workoutForm.workout_name);
 
       if (!workoutNameExists) {
-        
+
         await axios.post(`${import.meta.env.VITE_BACKEND_URL}/add-workout`, {
           workout_name: workoutForm.workout_name,
-          duration: workoutForm.duration * 60, 
+          duration: workoutForm.duration * 60,
           distance: workoutForm.distance,
           heart_rate: workoutForm.heart_rate
         });
@@ -124,8 +124,8 @@ function HomepageComp() {
         });
 
 
-        
-      } 
+
+      }
       else {
         alert("Workout name already exists. Please choose a different name.");
       }
@@ -134,6 +134,19 @@ function HomepageComp() {
       console.error("Error adding workout:", err);
     }
   };
+
+  const deleteWorkout = async (workoutName) => {
+    try {
+      const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/delete-workout`, {
+        data: { workoutName } 
+      });
+      alert(`Workout successfully deleted: ${workoutName}`);
+      fetchWorkouts();
+    }
+    catch (err) {
+      console.error('Error deleting workout:', err);
+    }
+  }
 
   return (
     <>
@@ -146,79 +159,79 @@ function HomepageComp() {
               Filter
             </div>
             {isFilterOpen && (
-                <div className='filter-dropdown'>
-                  <input
-                    name='workout_name'
-                    type='text'
-                    value={filters.workout_name}
-                    onChange={handleFilterChange}
-                    placeholder="Workout Name"
-                  />
+              <div className='filter-dropdown'>
+                <input
+                  name='workout_name'
+                  type='text'
+                  value={filters.workout_name}
+                  onChange={handleFilterChange}
+                  placeholder="Workout Name"
+                />
 
-                  <input
-                    name='min_duration'
-                    type='text'
-                    value={filters.min_duration}
-                    onChange={handleFilterChange}
-                    placeholder="Min Duration"
-                  />
+                <input
+                  name='min_duration'
+                  type='text'
+                  value={filters.min_duration}
+                  onChange={handleFilterChange}
+                  placeholder="Min Duration"
+                />
 
-                  <input
-                    name='max_duration'
-                    type='text'
-                    value={filters.max_duration}
-                    onChange={handleFilterChange}
-                    placeholder="Max Duration"
-                  />
+                <input
+                  name='max_duration'
+                  type='text'
+                  value={filters.max_duration}
+                  onChange={handleFilterChange}
+                  placeholder="Max Duration"
+                />
 
-                  <input
-                    name='min_distance'
-                    type='text'
-                    value={filters.min_distance}
-                    onChange={handleFilterChange}
-                    placeholder="Min Distance"
-                  />
+                <input
+                  name='min_distance'
+                  type='text'
+                  value={filters.min_distance}
+                  onChange={handleFilterChange}
+                  placeholder="Min Distance"
+                />
 
-                  <input
-                    name='max_distance'
-                    type='text'
-                    value={filters.max_distance}
-                    onChange={handleFilterChange}
-                    placeholder="Max Distance"
-                  />
+                <input
+                  name='max_distance'
+                  type='text'
+                  value={filters.max_distance}
+                  onChange={handleFilterChange}
+                  placeholder="Max Distance"
+                />
 
-                  <input
-                    name='heart_rate'
-                    type='text'
-                    value={filters.heart_rate}
-                    onChange={handleFilterChange}
-                    placeholder="Heart Rate"
-                  />
+                <input
+                  name='heart_rate'
+                  type='text'
+                  value={filters.heart_rate}
+                  onChange={handleFilterChange}
+                  placeholder="Heart Rate"
+                />
 
-                  <input
-                    name='start_date'
-                    type='date'
-                    value={filters.start_date}
-                    onChange={handleFilterChange}
-                  />
+                <input
+                  name='start_date'
+                  type='date'
+                  value={filters.start_date}
+                  onChange={handleFilterChange}
+                />
 
+                <input
+                  name='end_date'
+                  type='date'
+                  value={filters.end_date}
+                  onChange={handleFilterChange}
+                />
+                <div className='sort-box'>
+                  <label className='sort-label' htmlFor="Sort By Date">{reverse ? "Date ↓" : "Date ↑"}</label>
                   <input
-                    name='end_date'
-                    type='date'
-                    value={filters.end_date}
-                    onChange={handleFilterChange}
+                    type="checkbox"
+                    name='Sort By Date'
+                    onChange={handleCheckbox}
+                    className='checkbox-input'
                   />
-                  <div className='sort-box'>
-                    <label className='sort-label' htmlFor="Sort By Date">{reverse ? "Date ↓" : "Date ↑"}</label>
-                    <input 
-                      type="checkbox"
-                      name='Sort By Date'
-                      onChange={handleCheckbox}
-                      className='checkbox-input'
-                    />
-                  </div>
                 </div>
-              )}
+              </div>
+            )}
           </div>
 
 
@@ -290,6 +303,7 @@ function HomepageComp() {
                       fontSize: '0.8rem'
                     }}>Time: {formatDate(workout.date_time)}</span>
                     <img className='icons' src={workout.weather} alt="weather icon" />
+                    <button className='delete-button' title={workout.workout_name} onClick={(e) => deleteWorkout(e.target.title)}><img title={workout.workout_name} className='delete-icon' src='delete-icon.svg'/></button>
                   </div>
                 </div>
               ))

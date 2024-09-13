@@ -113,6 +113,7 @@ input {
 }
 
 .workout-details {
+  position: relative;
   display: flex;
   margin: 20px;
   padding: 1rem;
@@ -220,4 +221,18 @@ input {
   display: flex;
   align-items: center;
   width: 100%;
+}
+
+.delete-button{
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-top: 5px;
+  background-color: transparent;
+  border: none;
+}
+.delete-icon{
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
 }

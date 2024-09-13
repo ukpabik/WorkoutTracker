@@ -189,6 +189,26 @@ app.post('/add-workout', async (req, res) => {
 
 });
 
+
+// Delete request for deleting a workout
+app.delete('/delete-workout', async (req, res) => {
+  try{
+    const workoutName = req.body.workoutName;
+    
+    await pool.query('DELETE FROM workouts WHERE workout_name = $1', [workoutName]);
+    
+    res.status(200).send(`Workout deleted successfully: ${JSON.stringify(workoutName)}`);
+  }
+
+  catch(err){
+    res.status(400).send('Unable to delete workout:', err);
+  }
+})
+
+
+
+
+
 /**
  * Function for adding new workout to database
  * @param {*} data The workout data
